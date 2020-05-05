@@ -1,11 +1,11 @@
 #----------------------------------------------------------------------------#
 # Imports
 #----------------------------------------------------------------------------#
-
+import sys
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -14,6 +14,7 @@ from flask_wtf import Form
 from forms import *
 from config import Config
 from flask_migrate import Migrate
+from flask_marshmallow import Marshmallow
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -22,8 +23,9 @@ app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config.Config')
 db = SQLAlchemy(app)
-
+ma = Marshmallow(app)
 migrate = Migrate(app,db)
+
 
 # DONE: connect to a local postgresql database
 
@@ -59,6 +61,11 @@ class Artist(db.Model):
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
+class VenueSchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = Venue
+
+
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
 #----------------------------------------------------------------------------#
@@ -74,6 +81,13 @@ def format_datetime(value, format='medium'):
   return babel.dates.format_datetime(date, format)
 
 app.jinja_env.filters['datetime'] = format_datetime
+
+#----------------------------------------------------------------------------#
+# Schema init
+#----------------------------------------------------------------------------#
+venue_schema = VenueSchema()
+venues_schema = VenueSchema(many=True)
+
 
 #----------------------------------------------------------------------------#
 # Controllers.
@@ -112,7 +126,7 @@ def venues():
       "num_upcoming_shows": 0,
     }]
   }]
-  return render_template('pages/venues.html', areas=data);
+  return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
@@ -225,6 +239,28 @@ def create_venue_form():
 def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
+  error = False
+  body = {}
+  data, errMsg = venue_schema.load(request.form)
+  if errMsg:
+    flash(f"Error when loading form data with following error:{errors}")
+    abort(400, errMsg)
+  try:
+    venue = Venue(**data)
+    db.session.add(venue)
+    db.session.commit()
+  except:
+    error = True
+    db.session.rollback()
+    errMsg = sys.exc_info()
+    print(errMsg)
+  finally:
+    db.session.close()
+  
+  if error:
+    flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+    abort(500)
+
 
   # on successful db insert, flash success
   flash('Venue ' + request.form['name'] + ' was successfully listed!')
