@@ -5,7 +5,7 @@ import sys
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort,jsonify
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -15,6 +15,7 @@ from forms import *
 from config import Config
 from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
+from marshmallow import EXCLUDE
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -61,9 +62,10 @@ class Artist(db.Model):
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
-class VenueSchema(ma.SQLAlchemySchema):
+class VenueSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Venue
+        unknown = EXCLUDE
 
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
@@ -241,10 +243,14 @@ def create_venue_submission():
   # TODO: modify data to be the data object returned from db insertion
   error = False
   body = {}
-  data, errMsg = venue_schema.load(request.form)
-  if errMsg:
-    flash(f"Error when loading form data with following error:{errors}")
-    abort(400, errMsg)
+  try:
+    data = venue_schema.load(request.form)
+  except:
+    flash('An error occurred. Venue ' + request.form['name']  + ' could not be listed.')
+    return jsonify({'succeess':False})
+    
+  print(data)
+
   try:
     venue = Venue(**data)
     db.session.add(venue)
@@ -258,8 +264,8 @@ def create_venue_submission():
     db.session.close()
   
   if error:
-    flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-    abort(500)
+    flash('An error occurred. Venue ' + data['name'] + ' could not be listed.')
+    return jsonify({'succeess':False})
 
 
   # on successful db insert, flash success

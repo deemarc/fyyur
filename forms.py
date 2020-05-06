@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask_wtf import FalskForm
+from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField
 from wtforms.validators import DataRequired, AnyOf, URL
 
@@ -78,7 +78,7 @@ genres_choices = [
                     ('Soul', 'Soul'),
                     ('Other', 'Other'),
                 ]
-class ShowForm(FalskForm):
+class ShowForm(FlaskForm):
     artist_id = StringField(
         'artist_id'
     )
@@ -91,7 +91,7 @@ class ShowForm(FalskForm):
         default= datetime.today()
     )
 
-class VenueForm(FalskForm):
+class VenueForm(FlaskForm):
     name = StringField(
         'name', validators=[DataRequired()]
     )
@@ -120,7 +120,7 @@ class VenueForm(FalskForm):
         'facebook_link', validators=[URL()]
     )
 
-class ArtistForm(FalskForm):
+class ArtistForm(FlaskForm):
     name = StringField(
         'name', validators=[DataRequired()]
     )
