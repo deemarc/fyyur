@@ -53,8 +53,8 @@ app.jinja_env.filters['datetime'] = format_datetime
 #----------------------------------------------------------------------------#
 # Schema init
 #----------------------------------------------------------------------------#
-venue_schema = VenueSchema()
-venues_schema = VenueSchema(many=True)
+# venue_schema = VenueSchema()
+# venues_schema = VenueSchema(many=True)
 
 
 #----------------------------------------------------------------------------#
@@ -121,7 +121,7 @@ def show_venue(venue_id):
     venue = Venue.query.filter_by(id=venue_id).first()
     if not venue:
       not_found_error(f"Venue with venue_id:{venue_id} cannot be found")
-    venue_data = venue_schema.dump(venue)
+    venue_data = venue.dump()
   except:
     error = True
     db.session.rollback()
@@ -148,20 +148,24 @@ def create_venue_form():
 def create_venue_submission():
   # DONE: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
-  error = False
+  error = False   
 
   try:
-    data = venue_schema.load(request.form)
-  except:
-    errMsg = 'An error occurred. Venue ' + request.form['name']  + ' could not be listed.'
-    flash(errMsg)
-    return server_error(errMsg)
-    
-  print(data)
-
-  try:
-    venue = Venue(**data)
-    db.session.add(venue)
+    venue_name = request.form['name']
+    new_venue = Venue(
+        name=request.form['name'],
+        genres=request.form.getlist('genres'),
+        address=request.form['address'],
+        city=request.form['city'],
+        state=request.form['state'],
+        phone=request.form['phone'],
+        website=request.form['website'],
+        facebook_link=request.form['facebook_link'],
+        image_link=request.form['image_link'],
+        seeking_talent=request.form['seeking_talent'],
+        description=request.form['seeking_description'],
+    )
+    db.session.add(new_venue)
     db.session.commit()
   except:
     error = True
@@ -173,8 +177,8 @@ def create_venue_submission():
   
    # DONE: on unsuccessful db insert, flash an error instead.
   if error:
-    flash('An error occurred. Venue ' + data['name'] + ' could not be listed.')
-    return jsonify({'succeess':False})
+    flash('An error occurred. Venue ' + venue_name + ' could not be listed.')
+    return abort(500,errMsg)
 
 
   # on successful db insert, flash success
