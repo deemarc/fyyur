@@ -1,7 +1,10 @@
 from datetime import datetime
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField
+from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField,ValidationError, Length
 from wtforms.validators import DataRequired, AnyOf, URL
+import re
+
+# const enum
 
 state_choices = [
                     ('AL', 'AL'),
@@ -91,9 +94,26 @@ class ShowForm(FlaskForm):
         default= datetime.today()
     )
 
+# validator
+def validate_phone(FlaskForm, field):
+    if not re.search(r"^[0-9]{3}-[0-9]{3}-[0-9]{4}$", field.data):
+        raise ValidationError("Invalid phone number.")
+
+def validate_genres(FlaskForm, field):
+    genres_values = [choice[1] for choice in genres_choices]
+    for value in field.data:
+        if value not in genres_values:
+            raise ValidationError('Invalid genres value.')
+
 class VenueForm(FlaskForm):
+    
     name = StringField(
         'name', validators=[DataRequired()]
+    )
+    genres = SelectMultipleField(
+        # TODO implement enum restriction
+        'genres', validators=[DataRequired(), validate_genres],
+        choices=genres_choices
     )
     city = StringField(
         'city', validators=[DataRequired()]
@@ -106,18 +126,22 @@ class VenueForm(FlaskForm):
         'address', validators=[DataRequired()]
     )
     phone = StringField(
-        'phone'
+        'phone', validators=[DataRequired(),validate_phone]
     )
-    image_link = StringField(
-        'image_link'
-    )
-    genres = SelectMultipleField(
-        # TODO implement enum restriction
-        'genres', validators=[DataRequired()],
-        choices=genres_choices
+    website = StringField(
+        'website', validators=[URL(), Length(max=120)]
     )
     facebook_link = StringField(
         'facebook_link', validators=[URL()]
+    )
+    seeking_talent = BooleanField(
+        'seeking_talent'
+    )
+    seeking_description = StringField(
+        'seeking_description', validators=[Length(max=1024)]
+    )
+    image_link = StringField(
+        'image_link', validators=[URL()]
     )
 
 class ArtistForm(FlaskForm):

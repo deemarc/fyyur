@@ -17,7 +17,8 @@ from flask_migrate import Migrate
 
 
 from database import db, ma
-from database.shemas import VenueSchema
+from database import Venue
+# from database.shemas import VenueSchema
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
