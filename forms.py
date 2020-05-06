@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField,ValidationError, Length
-from wtforms.validators import DataRequired, AnyOf, URL
+from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField,ValidationError
+from wtforms.validators import DataRequired, AnyOf, URL, Length
 import re
 
 # const enum
