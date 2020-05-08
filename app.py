@@ -10,14 +10,13 @@ from flask_moment import Moment
 
 import logging
 from logging import Formatter, FileHandler
-from flask_wtf import Form
 from forms import *
 from config import Config
 from flask_migrate import Migrate
 
 
 from database import db, ma
-from database import Venue
+from database.models import Venue
 # from database.shemas import VenueSchema
 #----------------------------------------------------------------------------#
 # App Config.
@@ -153,19 +152,20 @@ def create_venue_submission():
 
   try:
     venue_name = request.form['name']
-    new_venue = Venue(
-        name=request.form['name'],
-        genres=request.form.getlist('genres'),
-        address=request.form['address'],
-        city=request.form['city'],
-        state=request.form['state'],
-        phone=request.form['phone'],
-        website=request.form['website'],
-        facebook_link=request.form['facebook_link'],
-        image_link=request.form['image_link'],
-        seeking_talent=request.form['seeking_talent'],
-        description=request.form['seeking_description'],
-    )
+    data = {}
+    data['name']=request.form['name']
+    data['genres']=request.form.getlist('genres')
+    data['address']=request.form['address']
+    data['city']=request.form['city']
+    data['state']=request.form['state']
+    data['phone']=request.form['phone']
+    data['website']=request.form['website']
+    data['facebook_link']=request.form['facebook_link']
+    data['image_link']=request.form['image_link']
+    data['seeking_talent']=request.form['seeking_talent']
+    data['description']=request.form['seeking_description']
+    # data['name']
+    new_venue = Venue(**data)
     db.session.add(new_venue)
     db.session.commit()
   except:
