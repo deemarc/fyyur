@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask_wtf import FlaskForm, Form
+from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
 from wtforms.validators import DataRequired, AnyOf, URL, Length, InputRequired, ValidationError
 import re
@@ -100,19 +100,25 @@ class ShowForm(FlaskForm):
 #     if not re.search(r"^[0-9]{3}-[0-9]{3}-[0-9]{4}$", field.data):
 #         raise ValidationError("Invalid phone number.")
 
-def validate_genres(form, field):
+def validate_genres(form, genres):
     genres_values = [choice[1] for choice in genres_choices]
-    for value in field.data:
+    for value in genres.data:
         if value not in genres_values:
-            raise ValidationError('Invalid genres value.')
+            raise ValidationError('Invalid genres value. Please Select from the provided list')
 
-class VenueForm(Form):
+def validate_phone(form, phone):
+    if not re.search(r"^[0-9]{3}-[0-9]{3}-[0-9]{4}$", phone.data):
+        raise ValidationError("Invalid phone number. It needs to be in this format: XXX-XXX-XXXX")
+
+class VenueForm(FlaskForm):
+    class Meta:
+        csrf = False  # Disable CSRF
     
     name = StringField(
         'name', validators=[DataRequired()]
     )
     genres = SelectMultipleField(
-        # TODO implement enum restriction
+        # Done implement enum restriction
         'genres', validators=[DataRequired(), validate_genres],
         choices=genres_choices
     )
@@ -127,7 +133,7 @@ class VenueForm(Form):
         'address', validators=[DataRequired()]
     )
     phone = StringField(
-        'phone', validators=[InputRequired()]
+        'phone', validators=[DataRequired(), validate_phone]
     )
     website = StringField(
         'website', validators=[URL(), Length(max=120)]
@@ -136,7 +142,7 @@ class VenueForm(Form):
         'facebook_link', validators=[URL()]
     )
     seeking_talent = BooleanField(
-        'seeking_talent', false_values=False
+        'seeking_talent'
     )
     seeking_description = StringField(
         'seeking_description', validators=[Length(max=1024)]
@@ -145,12 +151,13 @@ class VenueForm(Form):
         'image_link', validators=[URL()]
     )
 
-    def validate_phone(self, phone):
-        if not re.search(r"^[0-9]{3}-[0-9]{3}-[0-9]{4}$", phone.data):
-            raise ValidationError("Invalid phone number.")
+    
 
 
 class ArtistForm(FlaskForm):
+    class Meta:
+        csrf = False  
+        
     name = StringField(
         'name', validators=[DataRequired()]
     )
@@ -162,20 +169,27 @@ class ArtistForm(FlaskForm):
         choices=state_choices
     )
     phone = StringField(
-        # TODO implement validation logic for state
-        'phone'
-    )
-    image_link = StringField(
-        'image_link'
+        # Done implement validation logic for state
+        'phone', validators=[DataRequired(), validate_phone]
     )
     genres = SelectMultipleField(
-        # TODO implement enum restriction
-        'genres', validators=[DataRequired()],
+        # Done implement enum restriction
+        'genres', validators=[DataRequired(), validate_genres],
         choices=genres_choices
     )
-    facebook_link = StringField(
-        # TODO implement enum restriction
-        'facebook_link', validators=[URL()]
+    website = StringField(
+        'website', validators=[URL(), Length(max=120)]
     )
-
+    image_link = StringField(
+        'image_link', validators=[URL()]
+    )
+    facebook_link = StringField(
+        'facebook_link', validators=[URL()]
+    )    
+    seeking_venue = BooleanField(
+        'seeking_venue'
+    )
+    seeking_description = StringField(
+        'seeking_description', validators=[Length(max=1024)]
+    )
 # TODO IMPLEMENT NEW ARTIST FORM AND NEW SHOW FORM
