@@ -82,6 +82,9 @@ genres_choices = [
                     ('Other', 'Other'),
                 ]
 class ShowForm(FlaskForm):
+    class Meta:
+        csrf = False  
+        
     artist_id = StringField(
         'artist_id'
     )
@@ -192,4 +195,4 @@ class ArtistForm(FlaskForm):
     seeking_description = StringField(
         'seeking_description', validators=[Length(max=1024)]
     )
-# TODO IMPLEMENT NEW ARTIST FORM AND NEW SHOW FORM
+# DONE IMPLEMENT NEW ARTIST FORM AND NEW SHOW FORM

@@ -5,7 +5,7 @@ import sys
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort,jsonify
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort,jsonify,current_app
 from flask_moment import Moment
 
 import logging
@@ -124,8 +124,9 @@ def venues():
     raw_data[cur_state][cur_city].append({
       "id":venue.id,
       "name":venue.name,
-      "num_upcoming_show": venue.num_shows or 0 # there is some None value so use 0 instead
+      "num_upcoming_show": Show.query.filter_by(venue_id=venue.id).filter(Show.start_time > db.func.current_timestamp()).count()
     })
+    current_app.logger.debug(f"venus raw_data item:{raw_data}")
 
   data_list = []
 
@@ -176,11 +177,11 @@ def show_venue(venue_id):
     if not venue:
       abort(404,f"Venue with venue_id:{venue_id} cannot be found")
     venue_data = venue.dump()
+    venue_data.update(venue.dump_shows())
   except:
     error = True
     db.session.rollback()
     errMsg = sys.exc_info()
-    print(errMsg)
   finally:
     db.session.close()
   
@@ -229,7 +230,6 @@ def create_venue_submission():
     error = True
     db.session.rollback()
     errMsg = sys.exc_info()
-    print(errMsg)
   finally:
     db.session.close()
   
@@ -264,7 +264,6 @@ def delete_venue(venue_id):
     error = True
     db.session.rollback()
     errMsg = sys.exc_info()
-    print(errMsg)
   finally:
     db.session.close()
   if error:
@@ -312,13 +311,13 @@ def search_artists():
 
   artists = Artist.query.filter(Artist.name.ilike(looking_for))
   response = {}
-  response['count'] = venues.count()
+  response['count'] = artists.count()
   data = []
   for artist in artists:
     item = {
       "id":artist.id,
       "name":artist.name,
-      "num_upcoming_shows":0 #TODO: implement numshow
+      "num_upcoming_shows":artist.num_shows 
       # "num_upcoming_shows":artist.num_shows
     }
     data.append(item)
@@ -336,11 +335,11 @@ def show_artist(artist_id):
     if not artist:
       abort(404,f"Artist with artist_id:{artist_id} cannot be found")
     artist_data = artist.dump()
+    artist_data.update(artist.dump_shows())
   except:
     error = True
     db.session.rollback()
     errMsg = sys.exc_info()
-    print(errMsg)
   finally:
     db.session.close()
   
@@ -365,7 +364,6 @@ def edit_artist(artist_id):
     error = True
     db.session.rollback()
     errMsg = sys.exc_info()
-    print(errMsg)
   finally:
     db.session.close()
   
@@ -405,7 +403,6 @@ def edit_artist_submission(artist_id):
     error = True
     db.session.rollback()
     errMsg = sys.exc_info()
-    print(errMsg)
   finally:
     db.session.close()
   
@@ -428,7 +425,6 @@ def edit_venue(venue_id):
     error = True
     db.session.rollback()
     errMsg = sys.exc_info()
-    print(errMsg)
   finally:
     db.session.close()
   
@@ -470,7 +466,6 @@ def edit_venue_submission(venue_id):
     error = True
     db.session.rollback()
     errMsg = sys.exc_info()
-    print(errMsg)
   finally:
     db.session.close()
   
@@ -519,7 +514,6 @@ def create_artist_submission():
     error = True
     db.session.rollback()
     errMsg = sys.exc_info()
-    print(errMsg)
   finally:
     db.session.close()
 
@@ -545,7 +539,7 @@ def shows():
   shows = Show.query.order_by(Show.start_time.desc()).all()
   data = []
   for show in shows:
-    data.append(show.dump)
+    data.append(show.dump())
 
 
   return render_template('pages/shows.html', shows=data)
@@ -561,28 +555,30 @@ def create_show_submission():
   # called to create new shows in the db, upon submitting new show listing form
   # DONE: insert form data as a new Show record in the db, instead
   error = False   
-  form = ShowForm(request.POST or None)
+  form = ShowForm()
   if not form.validate_on_submit():
     if flash_errors(form):
       return render_template('forms/new_show.html', form=form)
 
-  data = {}
+  new_show = Show()
   try:
     for key, value in request.form.items():
-      setattr(data, key, value)
-    new_show = Show(**data)
+      # just to make sure the user didn't try to insert new id be themselves
+      if key != 'id':
+        app.logger.debug(f"key:{key}")
+        setattr(new_show, key, value)
     db.session.add(new_show)
     db.session.commit()
   except:
     error = True
     db.session.rollback()
     errMsg = sys.exc_info()
-    print(errMsg)
   finally:
     db.session.close()
 
+  # shows don't really have name or anything to identified so we just say something
   if error:
-    flash('An error occurred. Venue ' + venue_name + ' could not be listed.')
+    flash('An error occurred. The provided infomation about the show could not be listed.')
     return abort(500,errMsg)
 
   # on successful db insert, flash success

@@ -1,9 +1,11 @@
 from . import db
 from sqlalchemy_utils import aggregated
+from sqlalchemy.ext.associationproxy import association_proxy
+import datetime
 #----------------------------------------------------------------------------#
 # Models.
 #----------------------------------------------------------------------------#
-
+    
 class Venue(db.Model):
     __tablename__ = 'venue'
 
@@ -21,20 +23,12 @@ class Venue(db.Model):
     genres = db.Column(db.ARRAY(db.String), default=[])
     shows =db.relationship('Show', backref='Venue', lazy='dynamic')
 
-    @aggregated('shows', db.Column(db.Integer,default=0))
-    def num_shows(self):
-        return db.func.count('1')
 
     def dump(self):
         if not self.genres:
             genres = []
         else:
             genres = self.genres
-
-        if not self.num_shows:
-            num_shows = 0
-        else:
-            num_shows = self.num_shows
 
         return{
             'id' :self.id,
@@ -47,8 +41,22 @@ class Venue(db.Model):
             'facebook_link':self.facebook_link,
             'seeking_talent' :self.seeking_talent,
             'description' :self.description,
-            'image-link' :self.image_link,
-            'num_shows' : num_shows
+            'image-link' :self.image_link
+        }
+
+    def dump_shows(self):
+        upQ = Show.query.filter_by(venue_id=self.id).filter(Show.start_time > db.func.current_timestamp())
+        passQ = Show.query.filter(Show.start_time <= db.func.current_timestamp())
+        upcoming_shows_count = upQ.count()
+        past_shows_count = passQ.count()
+        upcoming_shows = list(map(Show.dump_artist_detail,upQ))
+        past_shows = list(map(Show.dump_artist_detail,passQ))
+
+        return {
+            "upcoming_shows_count":upcoming_shows_count,
+            "upcoming_shows":upcoming_shows,
+            "past_shows_count":past_shows_count,
+            "past_shows":past_shows
         }
 
     # DONE: implement any missing fields, as a database migration using Flask-Migrate
@@ -71,11 +79,11 @@ class Artist(db.Model):
     shows = db.relationship('Show', backref='Artist', lazy=True)
     
     def dump(self):
-
+        
         if not self.genres:
             genres = []
         else:
-            genres = self.genres
+            genres = self.genres        
 
         return {
             'id' :self.id,
@@ -89,6 +97,23 @@ class Artist(db.Model):
             'seeking_description' :self.seeking_description,
             'image-link' :self.image_link,
         }
+
+    def dump_shows(self):
+        upQ = Show.query.filter_by(artist_id=self.id).filter(Show.start_time > db.func.current_timestamp())
+        passQ = Show.query.filter(Show.start_time <= db.func.current_timestamp())
+        upcoming_shows_count = upQ.count()
+        past_shows_count = passQ.count()
+        upcoming_shows = list(map(Show.dump_venue_detail,upQ))
+        past_shows = list(map(Show.dump_venue_detail,passQ))
+
+        return {
+            
+            "upcoming_shows_count":upcoming_shows_count,
+            "upcoming_shows":upcoming_shows,
+            "past_shows_count":past_shows_count,
+            "past_shows":past_shows
+        }
+    
         
 
     # DONE: implement any missing fields, as a database migration using Flask-Migrate
@@ -99,5 +124,42 @@ class Show(db.Model):
     artist_id = db.Column(db.Integer, db.ForeignKey(Artist.id), nullable=False)
     start_time = db.Column(db.DateTime(timezone=True), nullable=False)
 
+    # venue_name = association_proxy('venue_id', 'name',creator=lambda value: Venue.get(value))
+    # artist_name = association_proxy('artist_id', 'name',creator=lambda value: Artist.get(value))
+    def basic_info(self):
+        date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+        start_time = self.start_time.strftime(date_format)
+        return {
+            'id':self.id,
+            'start_time':start_time
+        }
+    def dump(self):
+        data = {
+            'venue_id':self.venue_id,
+            'venue_name': self.Venue.name,
+            'artist_id':self.artist_id,
+            'artist_name':self.Artist.name
+        }
+        data.update(self.basic_info())
+        return data
+
+    def dump_artist_detail(self):
+        data = {
+            'artist_id':self.artist_id,
+            'artist_name':self.Artist.name,
+            'artist_image_link':self.Artist.image_link
+        }
+        data.update(self.basic_info())
+        return data
+
+    def dump_venue_detail(self):
+        data = {
+            'venue_id':self.venue_id,
+            'venue_name': self.Venue.name,
+            'venue_image_link':self.Venue.image_link,
+        }
+        data.update(self.basic_info())
+        return data
+            
 # DONE Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
