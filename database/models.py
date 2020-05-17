@@ -17,11 +17,11 @@ class Venue(db.Model):
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-    description = db.Column(db.String(1024), default='')
+    seeking_description = db.Column(db.String(1024), default='')
     seeking_talent = db.Column(db.Boolean, default=False)
     website = db.Column(db.String(120))
     genres = db.Column(db.ARRAY(db.String), default=[])
-    shows =db.relationship('Show', backref='Venue', lazy='dynamic')
+    shows =db.relationship('Show', backref='Venue', lazy='dynamic', cascade="save-update, merge, delete")
 
 
     def dump(self):
@@ -40,13 +40,13 @@ class Venue(db.Model):
             'website' :self.website,
             'facebook_link':self.facebook_link,
             'seeking_talent' :self.seeking_talent,
-            'description' :self.description,
-            'image-link' :self.image_link
+            'seeking_description' :self.seeking_description,
+            'image_link' :self.image_link
         }
 
     def dump_shows(self):
         upQ = Show.query.filter_by(venue_id=self.id).filter(Show.start_time > db.func.current_timestamp())
-        passQ = Show.query.filter(Show.start_time <= db.func.current_timestamp())
+        passQ = Show.query.filter_by(venue_id=self.id).filter(Show.start_time <= db.func.current_timestamp())
         upcoming_shows_count = upQ.count()
         past_shows_count = passQ.count()
         upcoming_shows = list(map(Show.dump_artist_detail,upQ))
@@ -76,7 +76,7 @@ class Artist(db.Model):
     seeking_venue = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String(1024), default=' ')
     website = db.Column(db.String(120))
-    shows = db.relationship('Show', backref='Artist', lazy=True)
+    shows = db.relationship('Show', backref='Artist', lazy=True, cascade="save-update, merge, delete")
     
     def dump(self):
         
@@ -95,19 +95,19 @@ class Artist(db.Model):
             'facebook_link':self.facebook_link,
             'seeking_venue' :self.seeking_venue,
             'seeking_description' :self.seeking_description,
-            'image-link' :self.image_link,
+            'image_link' :self.image_link,
         }
 
     def dump_shows(self):
         upQ = Show.query.filter_by(artist_id=self.id).filter(Show.start_time > db.func.current_timestamp())
-        passQ = Show.query.filter(Show.start_time <= db.func.current_timestamp())
+        passQ = Show.query.filter_by(artist_id=self.id).filter(Show.start_time <= db.func.current_timestamp())
         upcoming_shows_count = upQ.count()
         past_shows_count = passQ.count()
         upcoming_shows = list(map(Show.dump_venue_detail,upQ))
         past_shows = list(map(Show.dump_venue_detail,passQ))
 
         return {
-            
+
             "upcoming_shows_count":upcoming_shows_count,
             "upcoming_shows":upcoming_shows,
             "past_shows_count":past_shows_count,
@@ -120,8 +120,8 @@ class Artist(db.Model):
 class Show(db.Model):
     __tablename__ = 'show'
     id = db.Column(db.Integer, primary_key=True)
-    venue_id = db.Column(db.Integer, db.ForeignKey(Venue.id), nullable=False)
-    artist_id = db.Column(db.Integer, db.ForeignKey(Artist.id), nullable=False)
+    venue_id = db.Column(db.Integer, db.ForeignKey(Venue.id, ondelete='cascade'), nullable=False)
+    artist_id = db.Column(db.Integer, db.ForeignKey(Artist.id, ondelete='cascade'), nullable=False)
     start_time = db.Column(db.DateTime(timezone=True), nullable=False)
 
     # venue_name = association_proxy('venue_id', 'name',creator=lambda value: Venue.get(value))

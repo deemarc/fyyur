@@ -5,6 +5,7 @@
 	<div class="col-sm-6">
 		<h1 class="monospace">
 			{{ venue.name }}
+			<a class="btn btn-warning" href="/venues/{{venue.id}}/edit""> Edit </a>
 			<button onclick="ConfirmDelete({{ venue.id }})" class="btn btn-danger" data-id="{{ venue.id }}"> Delete </button>
 		</h1>
 		<p class="subtitle">
@@ -33,8 +34,8 @@
 		{% if venue.seeking_talent %}
 		<div class="seeking">
 			<p class="lead">Currently seeking talent</p>
-			<div class="description">
-				<i class="fas fa-quote-left"></i> {{ venue.description }} <i class="fas fa-quote-right"></i>
+			<div class="seeking_description">
+				<i class="fas fa-quote-left"></i> {{ venue.seeking_description }} <i class="fas fa-quote-right"></i>
 			</div>
 		</div>
 		{% else %}	

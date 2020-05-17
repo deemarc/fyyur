@@ -5,6 +5,8 @@
 	<div class="col-sm-6">
 		<h1 class="monospace">
 			{{ artist.name }}
+			<a class="btn btn-warning" href="/artists/{{artist.id}}/edit""> Edit </a>
+			<button onclick="ConfirmDelete({{ artist.id }})" class="btn btn-danger" data-id="{{ artist.id }}"> Delete </button>
 		</h1>
 		<p class="subtitle">
 			ID: {{ artist.id }}
@@ -40,7 +42,7 @@
 		{% endif %}
 	</div>
 	<div class="col-sm-6">
-		<img src="{{ artist.image_link }}" alt="Venue Image" />
+		<img src="{{ artist.image_link }}" alt="Arist Image" />
 	</div>
 </div>
 <section>
@@ -71,6 +73,44 @@
 		{% endfor %}
 	</div>
 </section>
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+	  <div class="modal-content">
+		<div class="modal-header" style="text-align:center;">
+		  <h4 class="modal-title" style="color:red;" id="deleteModalLabel">You are going to Delete this forever !!</h4>
+		</div>
+	   
+		<div class="modal-footer">
+		  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+		  <button type="button" class="btn btn-primary" onclick="Delete()">Delete</button>
+		</div>
+	  </div>
+	</div>
+  </div>
+  <script>
+	var curItem = 0;  
+	function ConfirmDelete(itemID){
+		curItem = itemID
+		$('#deleteModal').modal();
+	}
+	function Delete(){
+		console.log("item to delete: " + curItem)
+		fetch('/artists/'+curItem, {
+			method: 'DELETE',
+			headers:{
+				"Content-Type":"application/json"
+			}
+		}).then(function(response){
+		if(response.status === 200){
+				$('#deleteModal').modal('hide');
+				window.location.href  = "/index"
+			}
+			else{
+				alert(response.status);	
+			}
+	})
+	}
+  </script>
 
 {% endblock %}
 
